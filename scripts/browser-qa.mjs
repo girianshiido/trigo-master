@@ -16,7 +16,11 @@ try{
   for(const [fixture,count,seen] of [['stage-2',6,8],['stage-4',8,16],['stage-8',24,24],['direct',0,24]]){
    await importFixture(page,fixture);await page.locator('.continue-game').tap();await geometry(page,width,height);assert.equal(await page.locator('.point:not(:disabled)').count(),count);assert.equal(await page.locator('.point').count(),seen);
    if(fixture==='stage-2'){assert.equal(await page.locator('[data-guide="vertical"]').count(),1);assert.equal(await page.locator('[data-guide="horizontal"]').count(),0);assert.equal(await page.locator('.game [data-point="6"]').isDisabled(),true);}
-   if(fixture==='stage-4'){assert.equal(await page.locator('[data-guide="diagonal"]').count(),1);assert.equal(await page.locator('[data-guide="horizontal"],[data-guide="vertical"]').count(),0);}
+   if(fixture==='stage-4'){
+    for(const guide of ['diagonal','horizontal','vertical'])assert.equal(await page.locator(`[data-guide="${guide}"]`).count(),1);
+    for(const p of [2,4,8,10,14,16,20,22])assert.equal(await page.locator(`.game [data-point="${p}"]`).isDisabled(),true);
+    for(const p of [0,3,6,9,12,15,18,21])assert.equal(await page.locator(`.game [data-point="${p}"]`).isDisabled(),false);
+   }
    if(fixture==='stage-8'&&(width===390||width===1440||width===320))await page.screenshot({path:`test-results/game-${width}.png`});
    if(fixture==='direct'){assert.equal(await page.locator('.answer-choice').count(),4);if(width===390||width===320)await page.screenshot({path:`test-results/trig-${width}.png`});await answerCurrent(page);assert.equal(await page.locator('#progress-count').innerText(),'2 / 20');}
    await page.locator('.help-button').tap();assert.equal(await page.locator('dialog .angle-labels>span').count(),seen);await page.locator('.understood').tap();await page.locator('dialog').waitFor({state:'detached'});await page.locator('.quit').tap();await page.locator('.back-home').tap();

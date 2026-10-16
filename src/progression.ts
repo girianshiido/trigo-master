@@ -9,7 +9,7 @@ export const STAGES = [
   { title: 'Les quatre directions', family: 'Multiples de π/2', points: multiples(6), guides: guides(), total: 8, range: 12, grade: 1, hint: 'Un quart de tour vaut π/2.' },
   { title: 'Les tiers du cercle', family: 'Multiples de π/3', points: multiples(4), guides: guides(true), total: 8, range: 12, grade: 2, hint: 'Les droites x = ±1/2 sont tes repères.' },
   { title: 'De sixième en sixième', family: 'Multiples de π/6', points: multiples(2), guides: guides(true, true), total: 10, range: 12, grade: 3, hint: 'Combine les repères x = ±1/2 et y = ±1/2.' },
-  { title: 'Les diagonales', family: 'Multiples de π/4', points: multiples(3), guides: guides(false, false, true), total: 10, range: 12, grade: 4, hint: 'Les diagonales y = x et y = −x apparaissent.' },
+  { title: 'Les diagonales', family: 'Multiples de π/4', points: multiples(3), guides: guides(true, true, true), total: 10, range: 12, grade: 4, hint: 'Les diagonales y = x et y = −x s’ajoutent aux repères déjà connus.' },
   { title: 'Les seize points', family: 'π/4 et π/6 réunis', points: POINTS, guides: guides(true, true, true), total: 12, range: 12, grade: 5, hint: 'Les deux familles jouent ensemble.' },
   { title: 'Au-delà du premier tour', family: 'Les seize points · grands angles', points: POINTS, guides: guides(true, true, true), total: 20, range: 48, grade: 5, hint: 'Ajoute ou retire 2π : le point reste le même.' },
   { title: 'L’épreuve de Maître', family: '40 réponses sans faute', points: POINTS, guides: guides(true, true, true), total: 40, range: 96, grade: 5, hint: 'Quarante bonnes réponses. Aucun faux pas.' },

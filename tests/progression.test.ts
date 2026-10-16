@@ -12,7 +12,7 @@ test('stage targets and guides follow the requested learning order',()=>{
   for(let stage=0;stage<9;stage++) { p.stage=stage; assert.deepEqual(seenPoints(p).length,[2,4,8,12,16,16,16,16,24][stage]); }
   assert.deepEqual(STAGES[2].guides,{vertical:true,horizontal:false,diagonal:false});
   assert.equal(STAGES[2].points.includes(6),false); assert.equal(STAGES[2].points.includes(18),false);
-  assert.deepEqual(STAGES[4].guides,{vertical:false,horizontal:false,diagonal:true});
+  assert.deepEqual(STAGES[4].guides,{vertical:true,horizontal:true,diagonal:true});
   p.stage=4;assert.deepEqual(seenGuides(p),{vertical:true,horizontal:true,diagonal:true});
 });
 test('generated angles always match enabled targets, including negative large integers and the 24-point set',()=>{

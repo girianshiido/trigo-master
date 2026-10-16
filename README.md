@@ -14,7 +14,7 @@ Une nouvelle partie commence au grade **Débutant**. Chaque sauvegarde possède 
 | Multiples de π/2 | 8 | 4 | Aucun |
 | Multiples de π/3 | 8 | 6 | x = ±1/2 |
 | Multiples de π/6 | 10 | 12 | x = ±1/2, y = ±1/2 |
-| Multiples de π/4 | 10 | 8 | y = x, y = −x |
+| Multiples de π/4 | 10 | 8 | Repères x = ±1/2 et y = ±1/2 conservés, plus y = x et y = −x |
 | π/4 et π/6 réunis | 12 | 16 | Tous les précédents |
 | Grands angles | 20 | 16 | Tous |
 | Épreuve de Maître | 40 | 16 | Tous |
