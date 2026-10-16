@@ -4,8 +4,10 @@ import {chromium,browserOptions,base,newGame,answerCurrent} from './qa-helpers.m
 const browser=await chromium.launch(browserOptions),errors=[];const userData=await mkdtemp('/private/tmp/trigo-pwa-');
 try {
  const context=await chromium.launchPersistentContext(userData,{...browserOptions,viewport:{width:390,height:844},hasTouch:true,isMobile:true}),page=await context.newPage();page.on('pageerror',e=>{errors.push(e.message);console.log('PAGE ERROR',e.message);});page.on('console',m=>{if(m.type()==='error')console.log('CONSOLE',m.text());});page.on('requestfailed',r=>console.log('FAILED',r.url(),r.failure()));
+ let navigations=0;page.on('framenavigated',frame=>{if(frame===page.mainFrame())navigations++;});
  await page.goto(base,{waitUntil:'networkidle'});
- await page.evaluate(async()=>{await navigator.serviceWorker.ready;if(!navigator.serviceWorker.controller)await new Promise(resolve=>navigator.serviceWorker.addEventListener('controllerchange',resolve,{once:true}));});
+ await page.waitForFunction(()=>Boolean(navigator.serviceWorker.controller));
+ assert.equal(navigations,1,'First offline activation must not reload the page');
  const cache=await page.evaluate(async()=>{const key=(await caches.keys()).find(k=>k.startsWith('trigo-master-'));const c=await caches.open(key);return{key,paths:(await c.keys()).map(r=>new URL(r.url).pathname)};});
  assert.ok(cache.paths.some(p=>p.endsWith('logo.svg')));assert.ok(cache.paths.some(p=>p.endsWith('manifest.webmanifest')));assert.equal(cache.paths.filter(p=>p.endsWith('.ogg')).length,7);assert.equal(cache.paths.filter(p=>p.endsWith('.m4a')).length,7);assert.equal(cache.paths.filter(p=>p.includes('/icons/')).length,4);
  const manifest=await page.evaluate(async()=>{const url=document.querySelector('link[rel="manifest"]').href;return{url,body:await(await fetch(url)).json()};});assert.equal(manifest.body.display,'standalone');assert.equal(manifest.body.icons.length,3);
