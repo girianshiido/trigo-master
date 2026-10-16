@@ -11,9 +11,12 @@ import errorAac from './audio/error.m4a?url';
 import finishOgg from './audio/finish.ogg?url';
 import finishAac from './audio/finish.m4a?url';
 
-type Cue = 'start' | 'correct-1' | 'correct-2' | 'correct-3' | 'error' | 'finish';
+import achievementOgg from './audio/achievement.ogg?url';
+import achievementAac from './audio/achievement.m4a?url';
+
+type Cue = 'achievement' | 'start' | 'correct-1' | 'correct-2' | 'correct-3' | 'error' | 'finish';
 const files: Record<Cue, [string, string]> = {
-  start: [startOgg, startAac], 'correct-1': [correct1Ogg, correct1Aac],
+  achievement: [achievementOgg, achievementAac], start: [startOgg, startAac], 'correct-1': [correct1Ogg, correct1Aac],
   'correct-2': [correct2Ogg, correct2Aac], 'correct-3': [correct3Ogg, correct3Aac],
   error: [errorOgg, errorAac], finish: [finishOgg, finishAac],
 };
@@ -74,6 +77,9 @@ class Sounds {
         source.start();
       }).catch(() => {});
     } catch { /* Gameplay remains available if audio is disabled by the browser. */ }
+  }
+  activate(): void {
+    if (this.enabled) { try { void this.unlock().catch(() => {}); } catch { /* Optional audio. */ } }
   }
   private stop(): void {
     for (const source of this.sources) source.stop();

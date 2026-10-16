@@ -1,50 +1,95 @@
 # Trigo Master
 
-Jeu de trigonométrie en TypeScript, jouable sur téléphone, tablette et ordinateur.
-
 **Jouer : https://girianshiido.github.io/trigo-master/**
 
-## Le premier mode : Série
+Jeu de trigonométrie en TypeScript, conçu pour téléphone, tablette et ordinateur. Une ambiance d’observatoire, un logo vectoriel original, des retours immédiats et sept motifs sonores mélodieux en OGG avec alternative AAC.
 
-Choisissez de **5 à 40 questions**, puis touchez le point correspondant à l’angle proposé. Il y a exactement **16 points** : la réunion des multiples de π/4 et de π/6, sans doublons.
+## Aventures et grades
 
-- Bonne réponse : passage immédiat à la question suivante.
-- Erreur : le point correct et son rayon apparaissent pendant **500 ms**, puis la série continue.
-- Les angles fractionnaires commencent entre −π et π. Leur valeur absolue gagne un intervalle de longueur π toutes les trois bonnes réponses.
-- Dès la deuxième question, puis une question sur quatre, un grand multiple entier de π (jusqu’à ±100π) permet de travailler la parité, quel que soit le palier.
-- Toutes les fractions affichées sont **irréductibles**.
-- Le bilan indique les réussites, le temps moyen et les points à revoir.
-- Le bouton **?** ouvre une aide avec les angles remarquables. Aucun chronomètre de jeu ni autre mode pour cette première version.
+Une nouvelle partie commence au grade **Débutant**. Chaque sauvegarde possède son nom, son parcours, ses succès, ses compteurs et son aide. Aucun nombre maximal de sauvegardes n’est imposé ; l’espace disponible dépend de l’appareil.
 
-## Direction visuelle et sons
+| Épreuve | Questions sans faute | Points actifs | Guides |
+|---|---:|---:|---|
+| Multiples de π | 10 | 2 | Aucun |
+| Multiples de π/2 | 8 | 4 | Aucun |
+| Multiples de π/3 | 8 | 6 | x = ±1/2 |
+| Multiples de π/6 | 10 | 12 | x = ±1/2, y = ±1/2 |
+| Multiples de π/4 | 10 | 8 | y = x, y = −x |
+| π/4 et π/6 réunis | 12 | 16 | Tous les précédents |
+| Grands angles | 20 | 16 | Tous |
+| Épreuve de Maître | 40 | 16 | Tous |
+| Épreuve rapide sur π/12 | 40, moyenne ≤ 5 s | 24 | Aucun nouveau guide |
 
-Une ambiance d’observatoire en bleu nuit, avec des points lumineux couleur menthe, des accents dorés et des retours visuels discrets. Le cercle et les 16 points sélectionnables restent mathématiquement exacts.
+Les grades sont **Débutant, Apprenti, Initié, Pratiquant, Confirmé, Expert, Maître et Grand Maître**. Les succès des premiers paliers entraînent automatiquement le passage au suivant. Une erreur affiche la correction pendant 500 ms, conserve le grade acquis et oblige à retenter la série pour progresser.
 
-Six motifs sonores originaux accompagnent le début de série, les réussites (trois variantes ascendantes), les erreurs (deux notes descendantes) et le bilan (un petit arpège). Les fichiers **OGG Vorbis** sont utilisés en priorité, avec une variante **AAC/M4A** selon le navigateur. Ils durent de 0,345 à 0,890 seconde et sont préchargés ; leur lecture ne retarde aucune réponse.
+Les grands multiples entiers de π, positifs ou négatifs jusqu’à ±100π, apparaissent dès le début. Leur parité est accessible immédiatement. Toutes les fractions sont irréductibles. Les fractions plus grandes apparaissent dans les paliers avancés.
 
-Le bouton haut-parleur coupe immédiatement les sons et conserve le choix sur l’appareil. La lecture est activée par un geste de l’utilisateur. Aucune musique de fond ne tourne pendant le jeu.
+L’aide est cumulative : 2, 4, 8, 12, 16, puis 24 points connus. Elle ne révèle jamais les points des paliers à venir. Dans l’épreuve courante, les points connus mais hors de la famille étudiée sont désactivés.
 
-Les fichiers se trouvent dans `src/audio/`. `python3 scripts/generate-sounds.py` les régénère avec Python et FFmpeg. `scripts/audio-qa.mjs` vérifie les deux formats, le signal décodé, les événements du jeu et le réglage de son ; il utilise les mêmes variables Playwright que le contrôle visuel.
+## Cosinus & sinus
 
-Le repère est orthonormé. Le cercle est centré en O, de rayon 1. Les six droites y=x, y=−x, y=±1/2 et x=±1/2 sont tracées en pointillés.
+Le second parcours se débloque en découvrant les seize points.
 
-## Développement
+1. **Lecture** : 20 questions alternant cosinus et sinus, avec quatre valeurs possibles. Les dix premières montrent une projection sur l’axe correspondant.
+2. **Équations** : 20 questions demandant tous les points d’une valeur de cosinus ou de sinus. Le premier bon point reste sélectionné ; le second valide automatiquement. Les valeurs ±1 n’ont qu’une solution.
+
+Les deux épreuves demandent un sans-faute. **Grand Maître** exige leur validation ainsi que 40 angles sur π/12 sans erreur, avec une moyenne ≤ 5 s. Les certifications acquises sont conservées, quel que soit l’ordre de réussite.
+
+## Succès et entraînement
+
+24 succès indépendants sont accessibles dès le premier palier. Ils comprennent les séries de **10, 25, 50, 100, 200, 500 et 1 000** bonnes réponses, les cumuls, la découverte des points, les angles négatifs, les grands angles fractionnaires et les grades.
+
+**Parité express** demande 10 multiples de π en moins de 10 secondes. **À la vitesse de π** demande 20 en moins de 15 secondes. Les limites sont strictes, contrairement au seuil inclusif de 5 s pour Grand Maître. Les succès de vitesse exigent des réponses consécutives sans pause ; ouvrir l’aide, quitter ou masquer l’application interrompt cette tentative de vitesse.
+
+Les paliers déjà débloqués sont rejouables en entraînement, avec des séries de 10, 20, 40 ou 100 questions. Les succès et séries consécutives comptent aussi en entraînement. Seule une erreur remet la série consécutive à zéro, jamais une fermeture ou un changement d’épreuve.
+
+## Sauvegardes
+
+Les parties sont enregistrées dans IndexedDB après chaque réponse et périodiquement pendant les questions. Quitter conserve la question, les éventuels points déjà sélectionnés, la progression et le temps de réponse déjà écoulé. Le temps hors de l’application est exclu de la moyenne.
+
+- Créer, charger, renommer et supprimer des parties indépendantes.
+- Exporter et importer un fichier pour transférer une partie ou en conserver une copie.
+- Une importation crée un nouvel emplacement et n’écrase aucune partie.
+- AES-GCM chiffre et authentifie le contenu, avec un nonce aléatoire et une identité liée au fichier. Les modifications manuelles sont détectées et refusées.
+- Le chiffrement côté client décourage l’édition simple ; il ne constitue pas un système anti-triche reposant sur un serveur. La clé applicative permet la portabilité des exports.
+- Un verrou Web Locks empêche deux onglets compatibles de modifier simultanément une même aventure.
+
+## Installer et jouer hors connexion
+
+Le bouton **Installer le jeu** propose l’installation native lorsque le navigateur le permet. Sur iPhone/iPad, ouvrir le site dans Safari, puis **Partager → Sur l’écran d’accueil → Ajouter**. Sur Android, utiliser l’invite ou le menu **Installer l’application / Ajouter à l’écran d’accueil**.
+
+Le service worker précharge le jeu, les icônes, le logo, les polices et les sons. Après le premier chargement complet, l’application démarre et conserve les parties hors connexion. Les mises à jour attendent une action explicite et enregistrent la partie avant le rechargement.
+
+Le double appui et le pincement sont bloqués dans la page, avec conservation du défilement vertical des menus. Les formulaires utilisent une taille de texte adaptée à iOS. Le cercle tient compte des encoches et de l’indicateur d’accueil.
+
+Les données restent propres au navigateur/application et à l’adresse du site. Pour transférer une partie de l’aperçu local vers le site public ou vers un autre appareil, utiliser l’export/import.
+
+## Rendu mathématique et ressources
+
+Fractions, signes moins et parenthèses extensibles sont composés en MathML, avec la police locale STIX Two Math. Les radicaux √2 et √3 utilisent un unique tracé SVG continu, de même épaisseur jusqu’au bout de la barre, avec un espacement adapté au chiffre. Les licences sont dans `public/fonts/`.
+
+Les autres polices, DM Sans et Manrope, sont également locales et sous SIL OFL. Le jeu n’utilise aucun service distant pendant une partie. Le logo est un dessin vectoriel avec des lettres converties en contours.
+
+## Développement et vérification
 
 Node.js 22 ou ultérieur.
 
 ```sh
 npm install
-npm run dev
 npm test
 npm run build
+npm run dev
 ```
 
-Le code du moteur se trouve dans `src/engine.ts`, l’interface dans `src/main.ts` et les styles dans `src/style.css`. Le calcul des angles utilise des entiers en unités de π/12, sans comparer de nombres flottants.
+`npm run build` vérifie TypeScript, produit le site dans `docs/` puis génère un cache hors connexion dont la version dépend de tous les fichiers et du code du service worker. GitHub Pages publie `main:/docs`.
 
-Le script `scripts/browser-qa.mjs` vérifie sept tailles d’écran et les interactions tactiles, dont le centrage et la forme ronde des seize points. Il nécessite Playwright et Chromium. Les variables `PLAYWRIGHT_MODULE`, `TRIGO_CHROME` et `TRIGO_QA_URL` permettent de désigner une installation et une URL existantes.
+- `tests/` : calculs exacts, progression, seuils de vitesse, deux modes, reprise de sélection et protection des sauvegardes.
+- `scripts/make-fixtures.ts` : parties chiffrées de test, générées dans le dossier ignoré `test-results/`.
+- `scripts/browser-qa.mjs` : sept formats d’écran, parcours réel, aide, sauvegardes, import/export, altération, suppression et Grand Maître.
+- `scripts/math-qa.mjs` : dimensions des expressions, parenthèses et radicaux.
+- `scripts/audio-qa.mjs` : OGG/AAC, sons de jeu et de succès, préférence et coupure immédiate.
+- `scripts/pwa-qa.mjs` : critères d’installation Chromium, cache, reprise hors connexion, pincement et indications iOS simulées.
 
-Les polices DM Sans et Manrope sont servies localement ; leurs licences SIL Open Font License sont dans `public/fonts/`. Le jeu ne dépend d’aucun service externe pour fonctionner après chargement.
+Les scripts de navigateur nécessitent Playwright et Chromium. `PLAYWRIGHT_MODULE`, `TRIGO_CHROME` et `TRIGO_QA_URL` permettent de désigner une installation et une URL existantes. Les essais simulés ne remplacent pas une installation sur un iPhone et un Android physiques.
 
-## GitHub Pages
-
-`npm run build` produit le site statique dans `docs/`, avec des chemins relatifs. GitHub Pages peut publier la branche `main`, dossier `/docs`. Le fichier `.nojekyll` désactive le traitement Jekyll. Aucun serveur applicatif ni compte utilisateur n’est nécessaire.
+Régénération facultative : `scripts/generate-sounds.py` utilise Python et FFmpeg ; `scripts/generate-logo.py` utilise fontTools. Aucun de ces outils n’est nécessaire au fonctionnement du site.
