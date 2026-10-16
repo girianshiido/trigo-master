@@ -1,4 +1,5 @@
 import './style.css';
+import { sounds } from './sound';
 import { angleText, ERROR_DELAY, fraction, normalize, POINTS, Session, type Answer } from './engine';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -23,7 +24,9 @@ function circle(interactive = false, labels = false): string {
   const lines = `<path class="guides diagonal" d="M56 344L344 56M56 56L344 344"/><path class="guides" d="M27 125H373M27 275H373M125 27V373M275 27V373"/>`;
   return `<div class="circle-board ${interactive ? 'interactive' : ''} ${labels ? 'labelled' : ''}">
     <svg viewBox="0 0 400 400" aria-label="Cercle trigonométrique de rayon 1 dans un repère orthonormé" role="img">
-      <defs><marker id="arrow-${interactive}-${labels}" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0 0L6 3L0 6" fill="none" stroke="currentColor" stroke-width="1.1"/></marker></defs>
+      <defs><radialGradient id="disc-${interactive}-${labels}"><stop offset="0%" stop-color="#143545"/><stop offset="100%" stop-color="#0e202f"/></radialGradient><marker id="arrow-${interactive}-${labels}" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0 0L6 3L0 6" fill="none" stroke="currentColor" stroke-width="1.1"/></marker></defs>
+      ${labels ? '' : `<circle class="orbit-ring" cx="200" cy="200" r="174"/><path class="orbit-accent" d="M200 26A174 174 0 0 1 323 77"/><g class="orbit-ticks">${Array.from({ length: 48 }, (_, i) => { const a = coords(i / 2, 169), b = coords(i / 2, i % 4 === 0 ? 174 : 171); return `<path d="M${a.x} ${a.y}L${b.x} ${b.y}"/>`; }).join('')}</g>`}
+      <circle cx="200" cy="200" r="150" fill="url(#disc-${interactive}-${labels})"/>
       <circle class="circle-fill" cx="200" cy="200" r="150"/>${lines}
       <path class="axes" d="M19 200H383M200 381V18" marker-end="url(#arrow-${interactive}-${labels})"/>
       <path class="axes" d="M19 200H383" marker-end="url(#arrow-${interactive}-${labels})"/>
@@ -37,22 +40,32 @@ function circle(interactive = false, labels = false): string {
   </div>`;
 }
 function header(): string {
-  return `<header class="header"><button class="brand" aria-label="Trigo Master, accueil"><img src="./favicon.svg" alt=""/><span>trigo<span class="brand-light">master</span><span class="brand-dot">.</span></span></button><button class="help-button" aria-label="Afficher l’aide">?</button></header>`;
+  return `<header class="header"><button class="brand" aria-label="Trigo Master, accueil"><img src="./favicon.svg" alt=""/><span>trigo<span class="brand-light">master</span><span class="brand-dot">.</span></span></button><div class="header-actions"><span class="mode-label">LE CERCLE EN JEU</span><button class="sound-button" aria-label="${sounds.enabled ? 'Couper' : 'Activer'} le son" aria-pressed="${sounds.enabled}">${soundIcon()}</button><button class="help-button" aria-label="Afficher l’aide">?</button></div></header>`;
+}
+function soundIcon(): string {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4V5Z"/>${sounds.enabled ? '<path d="M15 8a6 6 0 0 1 0 8M18 5a10 10 0 0 1 0 14"/>' : '<path d="M16 9l5 6M21 9l-5 6"/>'}</svg>`;
 }
 function bindHeader(): void {
   document.querySelector('.brand')!.addEventListener('click', () => {
     if (screen === 'game') showLeave(); else home();
   });
   document.querySelector('.help-button')!.addEventListener('click', showHelp);
+  document.querySelector('.sound-button')!.addEventListener('click', () => {
+    sounds.toggle();
+    const button = document.querySelector('.sound-button')!;
+    button.innerHTML = soundIcon();
+    button.setAttribute('aria-pressed', String(sounds.enabled));
+    button.setAttribute('aria-label', `${sounds.enabled ? 'Couper' : 'Activer'} le son`);
+  });
 }
 function clearTimers(): void { clearTimeout(feedbackTimer); clearTimeout(pulseTimer); }
 function home(): void {
   clearTimers(); screen = 'home'; session = null;
   app.innerHTML = `${header()}<main class="home">
-    <section class="intro"><div class="eyebrow"><span></span> LE CERCLE, EN UN CLIC</div><h1>Un angle.<br/>Un point.<br/><em>À toi de jouer.</em></h1><p>Repère l’angle sur le cercle.<br/>Touche le bon point et enchaîne.</p>
-      <div class="setup"><div class="setup-heading"><label for="count">Ta série</label><output id="count-value" for="count">${total} questions</output></div><input id="count" type="range" min="5" max="40" value="${total}" step="1"/><div class="range-labels"><span>5 · express</span><span>40 · grand tour</span></div><div class="quick-counts">${[5, 10, 20].map(n => `<button data-count="${n}" class="${n === total ? 'selected' : ''}">${n}</button>`).join('')}<span>questions</span></div><button class="primary start">C’est parti <span aria-hidden="true">↗</span></button></div>
-      <p class="micro">Sans chrono. Juste le plaisir de progresser.</p>
-    </section><section class="home-visual" aria-label="Les seize points du cercle"><span class="visual-caption">16 POINTS. À TOI DE LES RETROUVER.</span>${circle()}<div class="sample-angle"><span>par exemple</span>${angle(8)}<span class="sample-arrow" aria-hidden="true">↖</span></div><div class="visual-foot"><span class="legend-dot"></span>Multiples de π/4 et de π/6</div></section>
+    <section class="intro"><div class="eyebrow"><span></span> EXPLORE LE CERCLE</div><h1>Un angle.<br/>Un point.<br/><em>À toi de jouer.</em></h1><p>Un peu d’intuition. Un soupçon de précision.<br/>Et le cercle devient ton terrain de jeu.</p>
+    </section><section class="home-visual" aria-label="Les seize points du cercle"><span class="visual-caption">LE TERRAIN DE JEU</span>${circle()}<div class="sample-angle"><span>À TOI DE PLACER</span>${angle(8)}<span class="sample-arrow" aria-hidden="true">↖</span></div><div class="visual-foot"><span class="legend-dot"></span>16 points remarquables · une infinité d’angles</div></section>
+    <section class="launch-card"><div class="setup"><div class="setup-heading"><label for="count">Ta série</label><output id="count-value" for="count">${total} questions</output></div><input id="count" type="range" min="5" max="40" value="${total}" step="1"/><div class="range-labels"><span>5 · express</span><span>40 · grand tour</span></div><div class="quick-counts">${[5, 10, 20].map(n => `<button data-count="${n}" class="${n === total ? 'selected' : ''}">${n}</button>`).join('')}<span>questions</span></div><button class="primary start">C’est parti <span aria-hidden="true">↗</span></button></div>
+      <p class="micro">Sans chrono. Juste le plaisir de progresser.</p></section>
     <footer class="home-footer"><span><b>01</b> Touche un point</span><span><b>02</b> Vois la réponse</span><span><b>03</b> Va un peu plus loin</span></footer>
   </main>`;
   bindHeader();
@@ -64,6 +77,7 @@ function home(): void {
   document.querySelector('.home-visual [data-point="8"]')!.classList.add('sample-point');
 }
 function start(): void {
+  sounds.play('start');
   clearTimers(); screen = 'game'; locked = false; session = new Session(total);
   app.innerHTML = `${header()}<main class="game"><section class="hud" aria-label="Progression"><div><span class="stat-label">QUESTION</span><strong id="progress-count"></strong></div><div class="level-stat"><span class="stat-label">EXPLORATION</span><strong id="level"></strong></div><div class="score-stat"><span class="stat-label">RÉUSSITES</span><strong id="score"></strong></div><div class="progress-track"><div id="progress-fill"></div></div></section>
     <section class="play-area">${circle(true)}<div class="feedback" aria-live="polite" aria-atomic="true"></div></section>
@@ -99,6 +113,7 @@ function answer(point: number): void {
   const feedback = document.querySelector<HTMLElement>('.feedback')!;
   clearTimeout(feedbackTimer);
   if (result.correct) {
+    if (!s.done) sounds.play((['correct-1', 'correct-2', 'correct-3'] as const)[(s.correct - 1) % 3]);
     document.querySelector(`[data-point="${point}"]`)!.classList.add('correct');
     feedback.className = 'feedback success visible'; feedback.textContent = '✓ Bien vu !';
     if (s.done) { results(); return; }
@@ -106,6 +121,7 @@ function answer(point: number): void {
     pulseTimer = setTimeout(resetPoints, 180);
     feedbackTimer = setTimeout(() => feedback.classList.remove('visible'), 650);
   } else {
+    sounds.play('error');
     locked = true;
     const target = normalize(result.units);
     document.querySelector(`[data-point="${point}"]`)!.classList.add('wrong');
@@ -130,6 +146,7 @@ function reviewItem(a: Answer): string {
   return `<div class="review-item"><svg viewBox="0 0 72 72" aria-label="Position correcte"><path d="M3 36H69M36 3V69" stroke="#ccd6d0"/><circle cx="36" cy="36" r="26" fill="none" stroke="#6c8982"/><path d="M36 36L${x} ${y}" stroke="#207764"/><circle cx="${x}" cy="${y}" r="5" fill="#207764"/></svg><div>${angle(a.units)}${reduced !== a.units ? `<span class="equivalent">même point que ${angle(reduced)}</span>` : '<span class="equivalent">À retrouver la prochaine fois</span>'}</div></div>`;
 }
 function results(): void {
+  sounds.play('finish');
   clearTimers(); screen = 'results'; locked = false;
   const s = session!;
   const errors = s.answers.filter(a => !a.correct);

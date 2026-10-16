@@ -16,6 +16,16 @@ Choisissez de **5 à 40 questions**, puis touchez le point correspondant à l’
 - Le bilan indique les réussites, le temps moyen et les points à revoir.
 - Le bouton **?** ouvre une aide avec les angles remarquables. Aucun chronomètre de jeu ni autre mode pour cette première version.
 
+## Direction visuelle et sons
+
+Une ambiance d’observatoire en bleu nuit, avec des points lumineux couleur menthe, des accents dorés et des retours visuels discrets. Le cercle et les 16 points sélectionnables restent mathématiquement exacts.
+
+Six motifs sonores originaux accompagnent le début de série, les réussites (trois variantes ascendantes), les erreurs (deux notes descendantes) et le bilan (un petit arpège). Les fichiers **OGG Vorbis** sont utilisés en priorité, avec une variante **AAC/M4A** selon le navigateur. Ils durent de 0,345 à 0,890 seconde et sont préchargés ; leur lecture ne retarde aucune réponse.
+
+Le bouton haut-parleur coupe immédiatement les sons et conserve le choix sur l’appareil. La lecture est activée par un geste de l’utilisateur. Aucune musique de fond ne tourne pendant le jeu.
+
+Les fichiers se trouvent dans `src/audio/`. `python3 scripts/generate-sounds.py` les régénère avec Python et FFmpeg. `scripts/audio-qa.mjs` vérifie les deux formats, le signal décodé, les événements du jeu et le réglage de son ; il utilise les mêmes variables Playwright que le contrôle visuel.
+
 Le repère est orthonormé. Le cercle est centré en O, de rayon 1. Les six droites y=x, y=−x, y=±1/2 et x=±1/2 sont tracées en pointillés.
 
 ## Développement
