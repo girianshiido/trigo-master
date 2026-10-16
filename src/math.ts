@@ -20,7 +20,9 @@ export function valueText(value:number):string {
   const n=Math.abs(value);return `${value<0?'−':''}${n===0?'0':n===4?'1':n===1?'1/2':n===2?'√2/2':'√3/2'}`;
 }
 export function trigFormula(fn:'cos'|'sin',units:number):string {
-  return wrap(`<mi class="function-name" mathvariant="normal">${fn}</mi><mo>⁡</mo><mrow><mo class="math-parenthesis" stretchy="true">(</mo><mrow>${angleNode(units)}</mrow><mo class="math-parenthesis" stretchy="true">)</mo></mrow><mo>=</mo><mo>?</mo>`,`${fn} de ${angleText(units)} égale ?`);
+  const stacked=units!==0&&fraction(units).denominator>1;
+  const paren=`class="math-parenthesis${stacked?'':' compact-parenthesis'}" stretchy="${stacked}"`;
+  return wrap(`<mi class="function-name" mathvariant="normal">${fn}</mi><mo>⁡</mo><mrow><mo ${paren}>(</mo><mrow>${angleNode(units)}</mrow><mo ${paren}>)</mo></mrow><mo>=</mo><mo>?</mo>`,`${fn} de ${angleText(units)} égale ?`);
 }
 export function trigEquation(fn:'cos'|'sin',value:number):string {
   return wrap(`<mi class="function-name" mathvariant="normal">${fn}</mi><mo>=</mo>${valueNode(value)}`,`${fn} égale ${valueText(value)}`);

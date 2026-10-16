@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
-import {chromium,browserOptions,base,importFixture,newGame,answerCurrent,geometry} from './qa-helpers.mjs';
+import {chromium,browserOptions,base,loadFixture,newGame,answerCurrent,geometry} from './qa-helpers.mjs';
 const browser=await chromium.launch(browserOptions);
 try{
- const c=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true}),p=await c.newPage();await p.goto(base,{waitUntil:'networkidle'});await importFixture(p,'stage-8');await p.locator('.continue-game').tap();
+ const c=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true}),p=await c.newPage();await p.goto(base,{waitUntil:'networkidle'});await loadFixture(p,'stage-8');await p.locator('.continue-game').tap();
  // This Chrome version has no protocol override for safe-area environment values.
  // Substitute test variables in the actual stylesheet to exercise its layout calculations.
  await p.evaluate(()=>{const style=document.createElement('style');style.textContent=[...document.styleSheets].flatMap(s=>[...s.cssRules].map(r=>r.cssText)).join('\n').replace(/env\(safe-area-inset-(top|bottom|left|right)\)/g,'var(--test-safe-$1,0px)');document.head.append(style);});

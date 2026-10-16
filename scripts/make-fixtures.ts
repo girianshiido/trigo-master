@@ -14,6 +14,10 @@ complete(p); // angle mastery only; trigonometry still required
 await writeFile('test-results/fixtures/angles-certified.json',JSON.stringify(await seal(p)));
 startTrig(p,'trig-direct');p.active!.question=8;p.active!.fn='cos';p.active!.choices=[-1,1,3,-3];
 await writeFile('test-results/fixtures/direct.json',JSON.stringify(await seal(p)));
+for(const [name,units] of [['zero',0],['pi',12]] as const){
+  const integer=structuredClone(p);integer.active!.question=units;integer.active!.choices=[-4,4,0,1];
+  await writeFile(`test-results/fixtures/direct-${name}.json`,JSON.stringify(await seal(integer)));
+}
 while(!p.active!.done)submitTrig(p,coordinate(p.active!.question,p.active!.fn),1000);
 startTrig(p,'trig-inverse');p.active!.question=4;p.active!.fn='cos';p.active!.choices=[1,-1,3,-3];
 await writeFile('test-results/fixtures/inverse.json',JSON.stringify(await seal(p)));

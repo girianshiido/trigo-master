@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { normalize, POINTS, ALL_POINTS } from '../src/engine';
-import { createProfile, grade, STAGES, startAttempt, submit, startTrig, submitTrig, trigTargets, coordinate, seenPoints, seenGuides, interrupt, validProfile, average, type Profile } from '../src/progression';
+import { createProfile, grade, STAGES, TRIG_SPEED_RULES, startAttempt, submit, startTrig, submitTrig, trigTargets, coordinate, seenPoints, seenGuides, interrupt, validProfile, average, type Profile } from '../src/progression';
 const make = () => createProfile('Test', 'test-save');
 function complete(p: Profile, ms = 1000) { const a=p.active!; while(!a.done) { submit(p,normalize(a.question),ms); assert.ok(validProfile(p)); } }
 function advance(p: Profile, stage: number) { while(p.stage<stage) { startAttempt(p);complete(p); } }
@@ -56,6 +56,41 @@ test('speed achievements have strict boundaries and pauses clear their run witho
 });
 test('training cannot bypass locked stages or advance the angle grade',()=>{
   const p=make();assert.throws(()=>startAttempt(p,1,'practice',10));assert.throws(()=>startTrig(p,'trig-direct'));startAttempt(p,0,'practice',20);complete(p);assert.equal(p.stage,0);
+});
+function answerTrig(p: Profile, ms: number): void {
+  const a=p.active!;
+  if(a.kind==='trig-direct')submitTrig(p,coordinate(a.question,a.fn),ms);
+  else for(const point of trigTargets(a))submitTrig(p,point,ms);
+}
+test('all seven trig speed achievements use strict thresholds and independent cos/sin times',()=>{
+  for(const rule of TRIG_SPEED_RULES)for(const delta of [-1,0,1]){
+    const p=make();p.stage=5;p.trigDirect=true;startTrig(p,rule.kind);
+    const questions=rule.fn?2*rule.count-(rule.fn==='cos'?1:0):rule.count;
+    for(let i=0;i<questions;i++)answerTrig(p,!rule.fn||p.active!.fn===rule.fn?(rule.limit+delta)/rule.count:10000);
+    assert.equal(Boolean(p.achievements[rule.id]),delta<0,`${rule.id} at ${rule.limit+delta} ms`);assert.ok(validProfile(p));
+  }
+  const p=make();p.stage=5;startTrig(p,'trig-direct');while(!p.active!.done)answerTrig(p,p.active!.fn==='cos'?1000:4000);
+  assert.ok(p.achievements['speed-cos-10']);assert.equal(p.achievements['speed-sin-5'],undefined);
+});
+test('errors and pauses prevent combining unrelated trig speed runs; restarting allows a fresh run',()=>{
+  const p=make();p.stage=5;p.trigDirect=true;startTrig(p,'trig-inverse');
+  for(let i=0;i<4;i++)answerTrig(p,100);
+  submitTrig(p,POINTS.find(point=>!trigTargets(p.active!).includes(point))!,100);answerTrig(p,100);
+  assert.equal(p.achievements['speed-equation-5'],undefined);
+  const direct=make();direct.stage=5;startTrig(direct,'trig-direct');for(let i=0;i<8;i++)answerTrig(direct,100);
+  interrupt(direct,100);while(!direct.active!.done)answerTrig(direct,100);
+  assert.equal(direct.achievements['speed-cos-5'],undefined);assert.equal(direct.achievements['speed-sin-5'],undefined);
+  startTrig(direct,'trig-direct');while(!direct.active!.done)answerTrig(direct,100);
+  assert.ok(direct.achievements['speed-cos-10']&&direct.achievements['speed-sin-10']);
+});
+test('equation speed counts a completed equation once and includes time until its second point',()=>{
+  const p=make();p.stage=5;p.trigDirect=true;startTrig(p,'trig-inverse');
+  for(let i=0;i<5;i++){
+    p.active!.question=4;const targets=trigTargets(p.active!);assert.equal(targets.length,2);
+    assert.equal(submitTrig(p,targets[0],100),null);assert.equal(p.stats.answered,i);
+    submitTrig(p,targets[1],5000);
+  }
+  assert.equal(p.stats.answered,5);assert.equal(p.achievements['speed-equation-5'],undefined);
 });
 test('coordinate table is exact for all 16 points and each inverse equation has one or two solutions',()=>{
   const p=make();p.stage=5;p.trigDirect=true;

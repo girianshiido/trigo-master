@@ -84,12 +84,36 @@ export function interrupt(p: Profile, elapsed: number): void {
 export function average(a: Attempt): number { return a.answers.length ? a.answers.reduce((sum, x) => sum + x.elapsed, 0) / a.answers.length : 0; }
 
 export type Achievement = { id: string; title: string; description: string; target: number; value: (p: Profile) => number };
+type TrigSpeedRule = { id: string; title: string; kind: 'trig-direct' | 'trig-inverse'; fn?: 'cos' | 'sin'; count: number; limit: number };
+export const TRIG_SPEED_RULES: readonly TrigSpeedRule[] = [
+  { id: 'speed-cos-5', title: 'Cosinus express', kind: 'trig-direct', fn: 'cos', count: 5, limit: 10000 },
+  { id: 'speed-cos-10', title: 'Cosinus éclair', kind: 'trig-direct', fn: 'cos', count: 10, limit: 15000 },
+  { id: 'speed-sin-5', title: 'Sinus express', kind: 'trig-direct', fn: 'sin', count: 5, limit: 10000 },
+  { id: 'speed-sin-10', title: 'Sinus éclair', kind: 'trig-direct', fn: 'sin', count: 10, limit: 15000 },
+  { id: 'speed-equation-5', title: 'Solutions express', kind: 'trig-inverse', count: 5, limit: 20000 },
+  { id: 'speed-equation-10', title: 'Solutions éclair', kind: 'trig-inverse', count: 10, limit: 30000 },
+  { id: 'speed-equation-20', title: 'Toutes à la vitesse de l’éclair', kind: 'trig-inverse', count: 20, limit: 45000 },
+];
+function unlockTrigSpeed(p: Profile, a: Attempt, now: number): void {
+  if (a.kind === 'angles' || a.interrupted) return;
+  let start = a.answers.length;
+  while (start > 0 && a.answers[start - 1].correct) start--;
+  for (const rule of TRIG_SPEED_RULES) {
+    if (rule.kind !== a.kind) continue;
+    // Direct questions alternate cos/sin. Their response times are counted separately.
+    const recent = a.answers.slice(start).filter((_, i) => !rule.fn || ((start + i) % 2 === 0 ? 'cos' : 'sin') === rule.fn).slice(-rule.count);
+    if (recent.length === rule.count && recent.reduce((sum, answer) => sum + answer.elapsed, 0) < rule.limit) p.achievements[rule.id] ??= now;
+  }
+}
 export const ACHIEVEMENTS: Achievement[] = [
   { id: 'first', title: 'Premier éclat', description: 'Ta toute première bonne réponse.', target: 1, value: p => p.stats.correct },
   ...[10, 25, 50, 100, 200, 500, 1000].map((n, i) => ({ id: `streak-${n}`, title: ['Dans le rythme', 'Main sûre', 'Sans trembler', 'Cent pour cent', 'Inébranlable', 'Virtuose', 'La légende'][i], description: `${n.toLocaleString('fr-FR')} bonnes réponses d’affilée, même sur plusieurs sessions.`, target: n, value: (p: Profile) => p.stats.bestStreak })),
   ...[100, 500, 1000, 5000].map((n, i) => ({ id: `total-${n}`, title: ['Cent détours', 'La belle constance', 'Mille et un angles', 'L’infatigable'][i], description: `Cumuler ${n.toLocaleString('fr-FR')} bonnes réponses.`, target: n, value: (p: Profile) => p.stats.correct })),
   { id: 'speed-10', title: 'Parité express', description: '10 multiples de π sans erreur en moins de 10 s, sans pause.', target: 1, value: p => Number(Boolean(p.achievements['speed-10'])) },
   { id: 'speed-20', title: 'À la vitesse de π', description: '20 multiples de π sans erreur en moins de 15 s, sans pause.', target: 1, value: p => Number(Boolean(p.achievements['speed-20'])) },
+  ...TRIG_SPEED_RULES.map(rule => ({ id: rule.id, title: rule.title, description: rule.fn
+    ? `${rule.count} lectures de ${rule.fn === 'cos' ? 'cosinus' : 'sinus'} sans erreur, temps cumulé < ${rule.limit / 1000} s, sans pause.`
+    : `${rule.count} équations d’affilée en moins de ${rule.limit / 1000} s, sans pause.`, target: 1, value: (p: Profile) => Number(Boolean(p.achievements[rule.id])) })),
   { id: 'points-16', title: 'Le grand tour', description: 'Retrouver chacun des 16 points remarquables.', target: 16, value: p => POINTS.filter(n => p.stats.points.includes(n)).length },
   { id: 'points-24', title: 'Tous azimuts', description: 'Retrouver chacun des 24 points du cercle.', target: 24, value: p => p.stats.points.length },
   { id: 'both-ways', title: 'Dans les deux sens', description: 'Réussir 20 angles positifs et 20 négatifs.', target: 40, value: p => Math.min(20, p.stats.positive) + Math.min(20, p.stats.negative) },
@@ -120,6 +144,7 @@ export function submit(p: Profile, point: number, elapsed: number, random = Math
         if (p.stats.integerTimes.length >= n && p.stats.integerTimes.slice(-n).reduce((sum, x) => sum + x, 0) < limit) p.achievements[`speed-${n}`] ??= now;
       }
     } else p.stats.integerTimes = [];
+    unlockTrigSpeed(p, a, now);
   } else { p.stats.streak = 0; p.stats.integerTimes = []; }
   a.done = a.answers.length === a.total;
   if (a.done) {

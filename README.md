@@ -37,9 +37,11 @@ Les deux épreuves demandent un sans-faute. **Grand Maître** exige leur validat
 
 ## Succès et entraînement
 
-24 succès indépendants sont accessibles dès le premier palier. Ils comprennent les séries de **10, 25, 50, 100, 200, 500 et 1 000** bonnes réponses, les cumuls, la découverte des points, les angles négatifs, les grands angles fractionnaires et les grades.
+31 succès indépendants accompagnent la progression, dont plusieurs accessibles dès le premier palier. Ils comprennent les séries de **10, 25, 50, 100, 200, 500 et 1 000** bonnes réponses, les cumuls, la découverte des points, les angles négatifs, les grands angles fractionnaires et les grades.
 
 **Parité express** demande 10 multiples de π en moins de 10 secondes. **À la vitesse de π** demande 20 en moins de 15 secondes. Les limites sont strictes, contrairement au seuil inclusif de 5 s pour Grand Maître. Les succès de vitesse exigent des réponses consécutives sans pause ; ouvrir l’aide, quitter ou masquer l’application interrompt cette tentative de vitesse.
+
+Sept succès récompensent aussi la vitesse en cosinus/sinus : pour chaque fonction, **5 lectures en moins de 10 s cumulées** puis **10 en moins de 15 s cumulées**. Les temps de lecture du cosinus et du sinus sont comptés séparément au sein de la même épreuve. En mode équation : **5 équations en moins de 20 s**, **10 en moins de 30 s**, puis **20 en moins de 45 s**. Une équation compte une seule fois, après la sélection de tous ses points, avec le temps complet de réponse. Une erreur interrompt la série ; une pause exclut cette épreuve des nouveaux succès de vitesse cosinus/sinus. Les succès déjà acquis restent conservés. Aucun changement de format de sauvegarde n’est nécessaire.
 
 Les paliers déjà débloqués sont rejouables en entraînement, avec des séries de 10, 20, 40 ou 100 questions. Les succès et séries consécutives comptent aussi en entraînement. Seule une erreur remet la série consécutive à zéro, jamais une fermeture ou un changement d’épreuve.
 
@@ -48,10 +50,9 @@ Les paliers déjà débloqués sont rejouables en entraînement, avec des série
 Les parties sont enregistrées dans IndexedDB après chaque réponse et périodiquement pendant les questions. Quitter conserve la question, les éventuels points déjà sélectionnés, la progression et le temps de réponse déjà écoulé. Le temps hors de l’application est exclu de la moyenne.
 
 - Créer, charger, renommer et supprimer des parties indépendantes.
-- Exporter et importer un fichier pour transférer une partie ou en conserver une copie.
-- Une importation crée un nouvel emplacement et n’écrase aucune partie.
-- AES-GCM chiffre et authentifie le contenu, avec un nonce aléatoire et une identité liée au fichier. Les modifications manuelles sont détectées et refusées.
-- Le chiffrement côté client décourage l’édition simple ; il ne constitue pas un système anti-triche reposant sur un serveur. La clé applicative permet la portabilité des exports.
+- Sauvegardes locales automatiques, sans fonction d’export ou d’import par fichier.
+- AES-GCM chiffre et authentifie le contenu, avec un nonce aléatoire et une identité liée à la partie. Les modifications manuelles sont détectées et refusées.
+- Le chiffrement côté client décourage l’édition simple ; il ne constitue pas un système anti-triche reposant sur un serveur. La clé reste stable pour conserver la compatibilité des parties existantes.
 - Un verrou Web Locks empêche deux onglets compatibles de modifier simultanément une même aventure.
 
 ## Installer et jouer hors connexion
@@ -62,7 +63,7 @@ Le service worker précharge le jeu, les icônes, le logo, les polices et les so
 
 Le double appui et le pincement sont bloqués dans la page, avec conservation du défilement vertical des menus. Les formulaires utilisent une taille de texte adaptée à iOS. Le cercle tient compte des encoches et de l’indicateur d’accueil.
 
-Les données restent propres au navigateur/application et à l’adresse du site. Pour transférer une partie de l’aperçu local vers le site public ou vers un autre appareil, utiliser l’export/import.
+Les données restent propres au navigateur/application et à l’adresse du site. Aucun transfert par fichier n’est proposé.
 
 ## Rendu mathématique et ressources
 
@@ -85,7 +86,7 @@ npm run dev
 
 - `tests/` : calculs exacts, progression, seuils de vitesse, deux modes, reprise de sélection et protection des sauvegardes.
 - `scripts/make-fixtures.ts` : parties chiffrées de test, générées dans le dossier ignoré `test-results/`.
-- `scripts/browser-qa.mjs` : sept formats d’écran, parcours réel, aide, sauvegardes, import/export, altération, suppression et Grand Maître.
+- `scripts/browser-qa.mjs` : sept formats d’écran, parcours réel, aide, sauvegardes locales chiffrées, altération, suppression et Grand Maître.
 - `scripts/math-qa.mjs` : dimensions des expressions, parenthèses et radicaux.
 - `scripts/audio-qa.mjs` : OGG/AAC, sons de jeu et de succès, préférence et coupure immédiate.
 - `scripts/pwa-qa.mjs` : critères d’installation Chromium, cache, reprise hors connexion, pincement et indications iOS simulées.

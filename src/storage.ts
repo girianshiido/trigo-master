@@ -1,8 +1,8 @@
 import { validProfile, type Profile } from './progression';
 
 export type Envelope = { format: 'trigo-master-save'; version: 1; id: string; iv: string; data: string };
-// Client-side deterrent, not a server-backed anti-cheat secret. The stable key
-// makes encrypted backups portable between the user's browsers and devices.
+// Client-side deterrent, not a server-backed anti-cheat secret.
+// Keep this stable key unchanged so existing local saves remain readable.
 const keyPromise = crypto.subtle.digest('SHA-256', new TextEncoder().encode('Trigo Master / portable saves / AES-GCM / v1 / observatory'))
   .then(bytes => crypto.subtle.importKey('raw', bytes, 'AES-GCM', false, ['encrypt', 'decrypt']));
 function base64(bytes: Uint8Array): string {
@@ -69,11 +69,4 @@ export async function list(): Promise<{ profiles: Profile[]; damaged: string[] }
   await Promise.all(values.map(async value => { try { profiles.push(await unseal(value)); } catch { if (typeof value.id === 'string') damaged.push(value.id); } }));
   profiles.sort((a, b) => b.updatedAt - a.updatedAt);
   return { profiles, damaged };
-}
-export async function importSave(text: string): Promise<Profile> {
-  if (text.length > 2_000_000) throw new Error('Ce fichier est trop volumineux.');
-  const profile = await unseal(JSON.parse(text));
-  // Import as a new slot so a backup never overwrites an existing adventure.
-  profile.id = crypto.randomUUID(); profile.name = `${profile.name.slice(0, 29)} (importée)`;
-  await save(profile); return profile;
 }

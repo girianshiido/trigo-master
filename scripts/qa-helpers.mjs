@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
 export const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
 export const browserOptions={...(process.env.TRIGO_CHROME?{executablePath:process.env.TRIGO_CHROME}:{}),headless:true};
 export const base=process.env.TRIGO_QA_URL||'http://127.0.0.1:5180/';
@@ -6,7 +7,16 @@ export const points=[0,2,3,4,6,8,9,10,12,14,15,16,18,20,21,22];
 export const normalize=n=>((n%24)+24)%24;
 export function target(text){if(text==='0')return 0;const m=text.replace('−','-').match(/^(-?)(\d*)π(?:\/(\d+))?$/);assert.ok(m,`Unknown angle ${text}`);return normalize((m[1]?-1:1)*Number(m[2]||1)*12/Number(m[3]||1));}
 export function encoded(point,fn){const x=Math[fn](point*Math.PI/12),values=[-1,-Math.sqrt(3)/2,-Math.sqrt(2)/2,-.5,0,.5,Math.sqrt(2)/2,Math.sqrt(3)/2,1];return values.findIndex(n=>Math.abs(n-x)<1e-8)-4;}
-export async function importFixture(page,name){const [chooser]=await Promise.all([page.waitForEvent('filechooser'),page.locator('.import-button').first().click()]);await chooser.setFiles(`test-results/fixtures/${name}.json`);await page.locator('.dashboard').waitFor();}
+// Test-only setup: seed an encrypted local record, then load it through the normal UI.
+export async function seedFixture(page,name){
+ const envelope=JSON.parse(await readFile(`test-results/fixtures/${name}.json`,'utf8'));
+ await page.evaluate(envelope=>new Promise((resolve,reject)=>{
+  const request=indexedDB.open('trigo-master',1);
+  request.onsuccess=()=>{const db=request.result,tx=db.transaction('saves','readwrite');tx.objectStore('saves').put(envelope);tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>reject(tx.error);};request.onerror=()=>reject(request.error);
+ }),envelope);
+ await page.reload({waitUntil:'networkidle'});await page.locator('.title-logo').waitFor();return envelope.id;
+}
+export async function loadFixture(page,name){const id=await seedFixture(page,name);await page.locator('.load-game').click();await page.locator(`.load-slot[data-id="${id}"]`).click();await page.locator('.dashboard').waitFor();}
 export async function newGame(page,name='QA'){await page.locator('.new-game').click();await page.locator('#save-name').fill(name);await page.locator('.name-form [type="submit"]').click();await page.locator('.game').waitFor();}
 export async function currentTarget(page){const label=await page.locator('.question-panel').getAttribute('aria-label');return target(label.replace('Place l’angle ','').replace(/^cos de |^sin de /,''));}
 export async function readValue(page){return page.locator('#question-angle>.math').evaluate(e=>{const sign=e.querySelector('mo.minus')?-1:1;const root=e.querySelector('.unified-root text');if(root)return sign*Number(root.textContent);if(e.querySelector('mfrac'))return sign;return e.textContent.includes('0')?0:sign*4;});}

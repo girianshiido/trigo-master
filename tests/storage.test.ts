@@ -13,4 +13,4 @@ test('manual changes to ciphertext, nonce, identity or schema are rejected',asyn
   const change=(value:string)=>{const bytes=Buffer.from(value,'base64');bytes[Math.floor(bytes.length/2)]^=1;return bytes.toString('base64');};
   for(const bad of [{...e,data:change(e.data)},{...e,iv:change(e.iv)},{...e,id:'other-id'},{...e,version:2},{...e,data:'x'},{format:'old-save'},null])await assert.rejects(()=>unseal(bad));
 });
-test('invalid internal profiles cannot be exported',async()=>{const p=createProfile('Test');p.stage=999;await assert.rejects(()=>seal(p));});
+test('invalid internal profiles cannot be encrypted',async()=>{const p=createProfile('Test');p.stage=999;await assert.rejects(()=>seal(p));});
