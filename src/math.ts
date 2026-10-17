@@ -25,5 +25,5 @@ export function trigFormula(fn:'cos'|'sin',units:number):string {
   return wrap(`<mi class="function-name" mathvariant="normal">${fn}</mi><mo>⁡</mo><mrow><mo ${paren}>(</mo><mrow>${angleNode(units)}</mrow><mo ${paren}>)</mo></mrow><mo>=</mo><mo>?</mo>`,`${fn} de ${angleText(units)} égale ?`);
 }
 export function trigEquation(fn:'cos'|'sin',value:number):string {
-  return wrap(`<mi class="function-name" mathvariant="normal">${fn}</mi><mo>=</mo>${valueNode(value)}`,`${fn} égale ${valueText(value)}`);
+  return wrap(`<mi class="function-name" mathvariant="normal">${fn}</mi><mo>⁡</mo><mrow class="unknown-angle"><mo class="math-parenthesis compact-parenthesis" stretchy="false">(</mo><mo>?</mo><mo class="math-parenthesis compact-parenthesis" stretchy="false">)</mo></mrow><mo>=</mo>${valueNode(value)}`,`${fn} d’un angle à trouver égale ${valueText(value)}`);
 }

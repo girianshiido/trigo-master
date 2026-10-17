@@ -1,6 +1,6 @@
 import './style.css';
 import { sounds } from './sound';
-import { angle, valueHtml, trigFormula, trigEquation } from './math';
+import { angle, valueHtml, valueText, trigFormula, trigEquation } from './math';
 import { angleText, ERROR_DELAY, normalize, POINTS, type Answer } from './engine';
 import { STAGES, ACHIEVEMENTS, createProfile, grade, seenPoints, seenGuides, startAttempt, startTrig, submit, submitTrig, coordinate, trigTargets, interrupt, average, type Profile, type Guides } from './progression';
 import * as storage from './storage';
@@ -207,7 +207,7 @@ function updateQuestion(): void {
   }
   const errors = a.answers.some(x => !x.correct);
   document.querySelector('#level-note')!.textContent = errors ? 'La série parfaite est perdue · tu pourras retenter' : a.kind === 'angles' ? `${a.mode === 'practice' ? 'Entraînement' : STAGES[a.stage].title}${a.stage === 8 ? ' · moyenne ≤ 5 s' : ''}` : a.kind === 'trig-direct' ? `${a.fn === 'cos' ? 'Cosinus : abscisse' : 'Sinus : ordonnée'}${a.answers.length < 10 ? ' · projection guidée' : ''}` : 'Une ou deux solutions · validation automatique';
-  document.querySelector('.question-panel')!.setAttribute('aria-label', a.kind === 'angles' ? `Place l’angle ${angleText(a.question)}` : `${a.fn} ${a.kind === 'trig-direct' ? `de ${angleText(a.question)}` : `égal à ${coordinate(a.question, a.fn)}`}`);
+  document.querySelector('.question-panel')!.setAttribute('aria-label', a.kind === 'angles' ? `Place l’angle ${angleText(a.question)}` : `${a.fn} ${a.kind === 'trig-direct' ? `de ${angleText(a.question)}` : `d’un angle à trouver égale ${valueText(coordinate(a.question, a.fn))}`}`);
   if (!paused && !document.hidden) clock = performance.now();
 }
 function resetPoints(): void {
