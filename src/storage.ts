@@ -50,23 +50,92 @@ async function write(action: (store: IDBObjectStore) => void): Promise<void> {
   });
 }
 let queue: Promise<void> = Promise.resolve();
-export function save(profile: Profile): Promise<void> {
+let primaryUnavailable = false;
+const LOCAL_PREFIX = 'trigo-master-save:';
+const DELETED_PREFIX = 'trigo-master-deleted:';
+const STORAGE_ERROR = 'Impossible d’enregistrer sur cet appareil. Autorise le stockage local pour ce site, puis réessaie.';
+function localRecords(): { values: Envelope[]; deleted: Set<string> } {
+  const values: Envelope[] = [], deleted = new Set<string>();
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)!;
+    if (key.startsWith(DELETED_PREFIX)) deleted.add(key.slice(DELETED_PREFIX.length));
+    if (!key.startsWith(LOCAL_PREFIX)) continue;
+    try {
+      const value = JSON.parse(localStorage.getItem(key)!);
+      if (!value || typeof value !== 'object' || value.id !== key.slice(LOCAL_PREFIX.length)) throw new Error('Identité');
+      values.push(value);
+    }
+    catch { values.push({ id: key.slice(LOCAL_PREFIX.length) } as Envelope); }
+  }
+  return { values, deleted };
+}
+async function storeEncrypted(encrypted: Envelope): Promise<void> {
+  if (!primaryUnavailable) {
+    try {
+      await write(store => { store.put(encrypted); });
+      try { localStorage.removeItem(LOCAL_PREFIX + encrypted.id); localStorage.removeItem(DELETED_PREFIX + encrypted.id); } catch { /* IndexedDB already saved the encrypted record. */ }
+      return;
+    } catch { primaryUnavailable = true; }
+  }
+  try { localStorage.setItem(LOCAL_PREFIX + encrypted.id, JSON.stringify(encrypted)); localStorage.removeItem(DELETED_PREFIX + encrypted.id); }
+  catch { throw new Error(STORAGE_ERROR); }
+}
+export function save(profile: Profile, canWrite?: () => boolean): Promise<void> {
   profile.updatedAt = Date.now();
   const snapshot = structuredClone(profile);
-  const pending = queue.catch(() => {}).then(async () => { const encrypted = await seal(snapshot); await write(store => { store.put(encrypted); }); });
+  const pending = queue.catch(() => {}).then(async () => {
+    const encrypted = await seal(snapshot);
+    if (canWrite && !canWrite()) throw new Error('L’accès à cette partie a été interrompu. Recharge-la avant de continuer.');
+    await storeEncrypted(encrypted);
+  });
   queue = pending; return pending;
 }
 export async function flush(): Promise<void> { await queue; }
-export async function remove(id: string): Promise<void> { await flush().catch(() => {}); await write(store => { store.delete(id); }); }
+export async function remove(id: string): Promise<void> {
+  await flush().catch(() => {});
+  let primaryDeleted = false;
+  if (!primaryUnavailable) {
+    try { await write(store => { store.delete(id); }); primaryDeleted = true; } catch { primaryUnavailable = true; }
+  }
+  try {
+    // Keep an unavailable IndexedDB copy from reappearing when that service recovers.
+    if (!primaryDeleted) localStorage.setItem(DELETED_PREFIX + id, '1');
+    localStorage.removeItem(LOCAL_PREFIX + id);
+    if (primaryDeleted) localStorage.removeItem(DELETED_PREFIX + id);
+  } catch { if (!primaryDeleted) throw new Error(STORAGE_ERROR); }
+}
 export async function list(): Promise<{ profiles: Profile[]; damaged: string[] }> {
   await flush().catch(() => {});
-  const database = await db();
-  const values = await new Promise<Envelope[]>((resolve, reject) => {
-    const request = database.transaction('saves', 'readonly').objectStore('saves').getAll();
-    request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error);
-  });
-  const profiles: Profile[] = [], damaged: string[] = [];
-  await Promise.all(values.map(async value => { try { profiles.push(await unseal(value)); } catch { if (typeof value.id === 'string') damaged.push(value.id); } }));
+  const values: Envelope[] = [];
+  if (!primaryUnavailable) {
+    try {
+      const database = await db();
+      values.push(...await new Promise<Envelope[]>((resolve, reject) => {
+        const request = database.transaction('saves', 'readonly').objectStore('saves').getAll();
+        request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error);
+      }));
+    } catch { primaryUnavailable = true; }
+  }
+  let local: ReturnType<typeof localRecords>;
+  try { local = localRecords(); } catch { if (primaryUnavailable) throw new Error(STORAGE_ERROR); local = { values: [], deleted: new Set() }; }
+  if (!primaryUnavailable && local.deleted.size) {
+    try {
+      await write(store => { for (const id of local.deleted) store.delete(id); });
+      for (const id of local.deleted) localStorage.removeItem(DELETED_PREFIX + id);
+    } catch { /* Deletion markers continue to hide inaccessible old copies. */ }
+  }
+  values.push(...local.values);
+  const byId = new Map<string, Profile>(), bad = new Set<string>();
+  const decoded = await Promise.all(values.map(async value => {
+    if (!value || local.deleted.has(value.id)) return null;
+    try { return await unseal(value); }
+    catch { if (typeof value.id === 'string') bad.add(value.id); return null; }
+  }));
+  for (const profile of decoded) if (profile) {
+    const previous = byId.get(profile.id);
+    if (!previous || profile.updatedAt >= previous.updatedAt) byId.set(profile.id, profile);
+  }
+  const profiles = [...byId.values()], damaged = [...bad].filter(id => !byId.has(id));
   profiles.sort((a, b) => b.updatedAt - a.updatedAt);
   return { profiles, damaged };
 }

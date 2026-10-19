@@ -5,6 +5,7 @@ import { angleText, ERROR_DELAY, normalize, POINTS, type Answer } from './engine
 import { STAGES, ACHIEVEMENTS, createProfile, grade, seenPoints, seenGuides, startAttempt, startTrig, submit, submitTrig, coordinate, trigTargets, interrupt, average, type Profile, type Guides } from './progression';
 import * as storage from './storage';
 import { initPwa, install, installLabel, preventZoom, isStandalone } from './pwa';
+import { ProfileLock } from './profile-lock';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 let profile: Profile | null = null;
@@ -45,20 +46,12 @@ function circle(points: readonly number[], enabled: readonly number[], guide: Gu
     ${labels ? `<div class="angle-labels">${points.map(p => { const c = coords(p, 185); return `<span style="left:${c.x / 4}%;top:${c.y / 4}%">${angle(p > 12 ? p - 24 : p)}</span>`; }).join('')}</div>` : ''}
   </div>`;
 }
-let heldId: string | null = null;
-let releaseLock: (() => void) | undefined;
-function releaseProfile(): void { releaseLock?.(); releaseLock = undefined; heldId = null; }
-async function acquireProfile(id: string): Promise<void> {
-  if (heldId === id) return;
-  releaseProfile();
-  if (!navigator.locks) { heldId = id; return; }
-  await new Promise<void>((resolve, reject) => {
-    void navigator.locks.request(`trigo-master-save-${id}`, { ifAvailable: true }, async lock => {
-      if (!lock) { reject(new Error('Cette aventure est déjà ouverte dans un autre onglet. Reviens à l’accueil dans cet onglet avant de la charger ici.')); return; }
-      heldId = id; resolve(); await new Promise<void>(done => { releaseLock = done; });
-    }).catch(reject);
-  });
-}
+const profileLock = new ProfileLock(() => {
+  clearTimers(); screen = 'home'; profile = null;
+  void home().then(() => showError(new Error('L’accès à cette partie a été interrompu. Recharge-la depuis l’accueil pour continuer.'))).catch(showError);
+});
+function releaseProfile(): void { profileLock.release(); }
+async function acquireProfile(id: string): Promise<void> { await profileLock.acquire(id); }
 function soundIcon(): string {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4V5Z"/>${sounds.enabled ? '<path d="M15 8a6 6 0 0 1 0 8M18 5a10 10 0 0 1 0 14"/>' : '<path d="M16 9l5 6M21 9l-5 6"/>'}</svg>`;
 }
@@ -79,7 +72,7 @@ function status(text: string): void { document.querySelectorAll('.save-status').
 async function persist(): Promise<void> {
   if (!profile) return;
   const id = profile.id; status('Enregistrement…');
-  try { await storage.save(profile); if (profile?.id === id) status('Sauvegardé'); }
+  try { await storage.save(profile, () => profileLock.owns(id)); if (profile?.id === id) status('Sauvegardé'); }
   catch (error) { status('Enregistrement indisponible'); throw error; }
 }
 function backgroundSave(): void { void persist().catch(() => saveWarning()); }
@@ -120,8 +113,14 @@ async function home(): Promise<void> {
 function newGame(): void {
   const dialog = openDialog(`<div class="eyebrow">NOUVELLE PARTIE</div><h2>Un nom pour ton aventure.</h2><form class="name-form"><label for="save-name">Nom de la sauvegarde</label><input id="save-name" name="name" maxlength="40" value="Aventure ${profiles.length + 1}" required autocomplete="off"/><p>Tu commenceras au grade Débutant. Chaque réponse sera enregistrée automatiquement.</p><div class="dialog-actions"><button class="secondary" type="button" data-close>Annuler</button><button class="primary" type="submit">Commencer <span>↗</span></button></div></form>`);
   dialog.querySelector('form')!.addEventListener('submit', event => {
-    event.preventDefault(); sounds.activate(); const button = dialog.querySelector<HTMLButtonElement>('[type="submit"]')!; button.disabled = true;
-    void (async () => { profile = createProfile(dialog.querySelector<HTMLInputElement>('input')!.value); await acquireProfile(profile.id); startAttempt(profile); await persist(); dialog.close(); sounds.play('start'); renderGame(); })().catch(error => { button.disabled = false; showError(error); });
+    event.preventDefault(); const button = dialog.querySelector<HTMLButtonElement>('[type="submit"]')!;
+    if (button.disabled) return;
+    sounds.activate(); button.disabled = true;
+    void (async () => {
+      const next = createProfile(dialog.querySelector<HTMLInputElement>('input')!.value);
+      await acquireProfile(next.id); startAttempt(next); await storage.save(next, () => profileLock.owns(next.id));
+      profile = next; dialog.close(); sounds.play('start'); renderGame();
+    })().catch(error => { releaseProfile(); button.disabled = false; showError(error); });
   });
   dialog.querySelector<HTMLInputElement>('input')!.select();
 }
@@ -326,5 +325,16 @@ document.addEventListener('visibilitychange',()=>{
     if(!document.querySelector('.resume-overlay')){const b=document.createElement('button');b.className='resume-overlay primary';b.textContent='Reprendre la partie';b.addEventListener('click',()=>{sounds.play('start');resume();});document.querySelector('.play-area')!.append(b);}
   }
 });
-window.addEventListener('pagehide',pause);
+window.addEventListener('pagehide',()=>{pause();releaseProfile();});
+window.addEventListener('pageshow',event=>{
+  if (!event.persisted || !profile) return;
+  const id = profile.id;
+  void (async()=>{
+    await acquireProfile(id);
+    const saved = (await storage.list()).profiles.find(p=>p.id===id);
+    if (!saved) throw new Error('Cette sauvegarde n’est plus disponible.');
+    profile = saved;
+    if (screen === 'game') renderGame(); else dashboard();
+  })().catch(error=>{clearTimers();screen='home';profile=null;void home().then(()=>showError(error));});
+});
 void home().catch(showError);

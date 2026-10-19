@@ -47,13 +47,13 @@ Les paliers déjà débloqués sont rejouables en entraînement, avec des série
 
 ## Sauvegardes
 
-Les parties sont enregistrées dans IndexedDB après chaque réponse et périodiquement pendant les questions. Quitter conserve la question, les éventuels points déjà sélectionnés, la progression et le temps de réponse déjà écoulé. Le temps hors de l’application est exclu de la moyenne.
+Les parties sont enregistrées dans IndexedDB après chaque réponse et périodiquement pendant les questions. Si ce service du navigateur échoue, le jeu utilise un stockage local de secours avec la même enveloppe chiffrée AES-GCM. Au rétablissement d’IndexedDB, les deux emplacements sont consultés et la copie la plus récente est conservée ; les suppressions restent effectives. Quitter conserve la question, les éventuels points déjà sélectionnés, la progression et le temps de réponse déjà écoulé. Le temps hors de l’application est exclu de la moyenne.
 
 - Créer, charger, renommer et supprimer des parties indépendantes.
 - Sauvegardes locales automatiques, sans fonction d’export ou d’import par fichier.
 - AES-GCM chiffre et authentifie le contenu, avec un nonce aléatoire et une identité liée à la partie. Les modifications manuelles sont détectées et refusées.
 - Le chiffrement côté client décourage l’édition simple ; il ne constitue pas un système anti-triche reposant sur un serveur. La clé reste stable pour conserver la compatibilité des parties existantes.
-- Un verrou Web Locks empêche deux onglets compatibles de modifier simultanément une même aventure.
+- Web Locks et une réservation locale protègent la partie contre l’ouverture simultanée dans deux onglets. Un échec interne de Web Locks ne suffit pas à annoncer qu’un autre onglet utilise la partie. La réservation est libérée à la fermeture de la page et expire après deux minutes en cas d’arrêt brutal.
 
 ## Installer et jouer hors connexion
 
@@ -90,6 +90,7 @@ npm run dev
 - `scripts/math-qa.mjs` : dimensions des expressions, parenthèses et radicaux.
 - `scripts/audio-qa.mjs` : OGG/AAC, sons de jeu et de succès, préférence et coupure immédiate.
 - `scripts/pwa-qa.mjs` : critères d’installation Chromium, cache, reprise hors connexion, pincement et indications iOS simulées.
+- `scripts/storage-recovery-qa.mjs` : reproduction des erreurs internes de stockage/verrouillage, démarrage, chiffrement de secours, reprise, exclusion entre onglets, retour à IndexedDB et suppression définitive.
 
 Les scripts de navigateur nécessitent Playwright et Chromium. `PLAYWRIGHT_MODULE`, `TRIGO_CHROME` et `TRIGO_QA_URL` permettent de désigner une installation et une URL existantes. Les essais simulés ne remplacent pas une installation sur un iPhone et un Android physiques.
 
