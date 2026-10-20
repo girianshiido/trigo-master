@@ -168,14 +168,22 @@ function trigMenu(): void {
   const d = openDialog(`<div class="eyebrow">COSINUS & SINUS</div><h2>Deux façons de lire le cercle.</h2><p>Chaque épreuve demande 20 réponses sans faute, en alternant cosinus et sinus.</p><div class="trig-options"><button class="secondary start-direct"><b>Lire les coordonnées</b><span>Un angle, quatre valeurs possibles.</span><small>${profile.trigDirect ? '✓ Épreuve validée · rejouer' : 'Première épreuve'}</small></button><button class="secondary start-inverse" ${profile.trigDirect ? '' : 'disabled'}><b>Retrouver les points</b><span>Une valeur, tous les points correspondants.</span><small>${profile.trigInverse ? '✓ Épreuve validée · rejouer' : profile.trigDirect ? 'Deuxième épreuve' : 'Valide d’abord la lecture'}</small></button></div><button class="secondary" data-close>Retour</button>`);
   for (const [selector, kind] of [['.start-direct','trig-direct'],['.start-inverse','trig-inverse']] as const) d.querySelector(selector)!.addEventListener('click', () => { d.close(); abandonThen(() => { startTrig(profile!, kind); sounds.play('start'); renderGame(); backgroundSave(); }); });
 }
+function restartLevel(): void {
+  if (!profile?.active) return;
+  const { kind, stage, mode, total } = profile.active;
+  if (kind === 'angles') startAttempt(profile, stage, mode, total);
+  else startTrig(profile, kind);
+  sounds.play('start'); renderGame(); backgroundSave();
+}
 function renderGame(): void {
   if (!profile?.active) return;
   clearTimers(); screen = 'game'; paused = false;
   const a = profile.active;
   if (a.done) { results(); return; }
   const stage = STAGES[a.stage], direct = a.kind === 'trig-direct';
-  app.innerHTML = `${header()}<main class="game ${direct ? 'direct-game' : ''}"><section class="hud" aria-label="Progression"><div><span class="stat-label">QUESTION</span><strong id="progress-count"></strong></div><div class="level-stat"><span class="stat-label">${a.kind === 'angles' ? 'GRADE' : 'COORDONNÉES'}</span><strong id="level"></strong></div><div class="score-stat"><span class="stat-label">D’AFFILÉE</span><strong id="score"></strong></div><div class="progress-track"><div id="progress-fill"></div></div></section><section class="play-area">${circle(seenPoints(profile), direct ? [] : stage.points, stage.guides)}<div class="feedback" aria-live="polite" aria-atomic="true"></div></section><section class="question-panel"><div class="question-overline"></div><div id="question-angle" aria-live="polite" aria-atomic="true"></div>${direct ? '<div class="answers-grid"></div>' : '<div class="question-hint"></div>'}<div class="level-note" id="level-note"></div></section><footer class="game-footer"><span class="save-status">Sauvegardé</span><button class="quiet quit">Sauvegarder et quitter</button></footer></main>`;
+  app.innerHTML = `${header()}<main class="game ${direct ? 'direct-game' : ''}"><section class="hud" aria-label="Progression"><div><span class="stat-label">QUESTION</span><strong id="progress-count"></strong></div><div class="level-stat"><span class="stat-label">${a.kind === 'angles' ? 'GRADE' : 'COORDONNÉES'}</span><strong id="level"></strong></div><div class="score-stat"><span class="stat-label">D’AFFILÉE</span><strong id="score"></strong></div><div class="progress-track"><div id="progress-fill"></div></div></section><section class="play-area">${circle(seenPoints(profile), direct ? [] : stage.points, stage.guides)}<div class="feedback" aria-live="polite" aria-atomic="true"></div></section><section class="question-panel"><div class="question-overline"></div><div id="question-angle" aria-live="polite" aria-atomic="true"></div>${direct ? '<div class="answers-grid"></div>' : '<div class="question-hint"></div>'}<div class="level-note" id="level-note"></div></section><footer class="game-footer"><span class="save-status">Sauvegardé</span><div class="game-actions"><button class="quiet restart" title="Recommencer le niveau à la première question">Recommencer</button><button class="quiet quit">Sauvegarder et quitter</button></div></footer></main>`;
   bindHeader(); document.querySelector('.quit')!.addEventListener('click', run(leaveGame));
+  document.querySelector('.restart')!.addEventListener('click', restartLevel);
   document.querySelectorAll<HTMLButtonElement>('.point:not(:disabled)').forEach(b => b.addEventListener('click', () => answer(Number(b.dataset.point))));
   updateQuestion();
 }
@@ -276,7 +284,7 @@ function results(): void {
   const message=a.kind==='angles'&&a.stage===8&&correct===a.total&&!a.passed?'La moyenne doit être ≤ 5 s pour valider cette épreuve.':a.kind==='angles'&&a.stage===8&&a.passed&&!p.grandMaster?'Angles rapides validés ! Termine aussi les épreuves de cosinus et sinus pour devenir Grand Maître.':a.passed?'Tes réussites et tes succès sont enregistrés.':'Ton grade est conservé. Retente la série pour la réussir sans faute.';
   app.innerHTML=`${header()}<main class="results"><div class="eyebrow"><span></span> ${a.kind==='angles'?'SÉRIE TERMINÉE':'COSINUS & SINUS'}</div><h1>${title}</h1><p>${message}</p><div class="result-score">${correct}<span>/${a.total}</span></div><span class="result-caption">bonnes réponses · ${esc(grade(p))}</span><div class="result-stats"><div><strong>${Math.round(correct/a.total*100)} %</strong><span>de réussite</span></div><div><strong>${seconds(average(a))} s</strong><span>par réponse</span></div><div><strong>${number(p.stats.bestStreak)}</strong><span>meilleure série</span></div></div><div class="result-actions"><button class="primary replay">${a.passed?'Rejouer':'Retenter'} <span>↗</span></button><button class="secondary adventure">Mon aventure</button>${a.kind==='trig-direct'&&p.trigDirect?'<button class="secondary next-inverse">Passer aux équations</button>':''}</div>${errors.length&&a.kind==='angles'?`<section class="review"><h2>Un petit tour de révision</h2><div class="review-grid">${errors.map(reviewItem).join('')}</div></section>`:'<div class="perfect-mark" aria-hidden="true">✦</div>'}</main>`;
   bindHeader(); document.querySelector('.adventure')!.addEventListener('click',dashboard);
-  document.querySelector('.replay')!.addEventListener('click',()=>{if(a.kind==='angles')startAttempt(p,a.stage,a.mode,a.total);else startTrig(p,a.kind);sounds.play('start');renderGame();backgroundSave();});
+  document.querySelector('.replay')!.addEventListener('click',restartLevel);
   document.querySelector('.next-inverse')?.addEventListener('click',()=>{startTrig(p,'trig-inverse');sounds.play('start');renderGame();backgroundSave();});
 }
 function showAchievements(): void {

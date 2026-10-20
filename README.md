@@ -45,6 +45,8 @@ Sept succès récompensent aussi la vitesse en cosinus/sinus : pour chaque fonct
 
 Les paliers déjà débloqués sont rejouables en entraînement, avec des séries de 10, 20, 40 ou 100 questions. Les succès et séries consécutives comptent aussi en entraînement. Seule une erreur remet la série consécutive à zéro, jamais une fermeture ou un changement d’épreuve.
 
+Pendant une épreuve, **Recommencer** relance immédiatement le même niveau à la première question, sans attendre la fin de la série. Le nombre de questions et le mode sont conservés, ainsi que le grade, les succès et les statistiques acquis. Les réponses, le chronométrage et les sélections de la tentative sont remis à zéro. Ce bouton est disponible pour les angles, la lecture cosinus/sinus et les équations, à côté de **Sauvegarder et quitter**.
+
 ## Sauvegardes
 
 Les parties sont enregistrées dans IndexedDB après chaque réponse et périodiquement pendant les questions. Si ce service du navigateur échoue, le jeu utilise un stockage local de secours avec la même enveloppe chiffrée AES-GCM. Au rétablissement d’IndexedDB, les deux emplacements sont consultés et la copie la plus récente est conservée ; les suppressions restent effectives. Quitter conserve la question, les éventuels points déjà sélectionnés, la progression et le temps de réponse déjà écoulé. Le temps hors de l’application est exclu de la moyenne.
